@@ -34,6 +34,28 @@ const PORT = process.env.PORT || 5000;
 // Security middleware
 app.use(helmet());
 
+// CORS configuration (moved before rate limiter to ensure preflight passes)
+const envOrigins = (process.env.CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+const allowedOrigins = [
+  'http://localhost:3000',
+  ...envOrigins,
+];
+const allowedOriginPatterns = [/\.vercel\.app$/];
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // Allow non-browser requests like Postman
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (allowedOriginPatterns.some(r => r.test(origin))) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+// Explicitly handle preflight for all routes
+app.options('*', cors(corsOptions));
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -42,24 +64,6 @@ const limiter = rateLimit({
 });
 
 app.use('/api/', limiter);
-
-// CORS configuration
-const allowedOrigins = [
-  'https://your-frontend-domain.com',
-  'http://localhost:3000',
-];
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // Allow non-browser requests like Postman
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true, // Allow cookies/auth headers
-}));
 
 // console.log("jhdfjksh");
 
