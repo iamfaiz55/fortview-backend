@@ -44,9 +44,21 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // CORS configuration
+const allowedOrigins = [
+  'https://your-frontend-domain.com',
+  'http://localhost:3000',
+];
+
 app.use(cors({
-  origin: '*',
-  credentials: true,
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // Allow non-browser requests like Postman
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true, // Allow cookies/auth headers
 }));
 
 // console.log("jhdfjksh");
@@ -94,7 +106,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 // 404 handler
 app.use( (req, res) => {
-  res.status(404).json({ message: 'Route not found from design hub server' });
+  res.status(404).json({ message: 'Route not found from Fort View server' });
 });
 
 mongoose.connection.once("open", ()=> {
